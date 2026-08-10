@@ -1,492 +1,556 @@
 <!doctype html>
-<title>Vouch — passport walkthrough</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>STAMP — passport walkthrough (working name, unconfirmed)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2314161a'/%3E%3Ctext x='6' y='23' font-family='monospace' font-size='18' fill='%23B98D46'%3E%3E_%3C/text%3E%3C/svg%3E">
 <style>
+  /*
+    NAME PLACEHOLDER: "STAMP" is a working title, not final.
+    Every occurrence is rendered from PRODUCT_NAME in the script below —
+    change that one constant to relabel the whole page.
+    Deliberate single dark-terminal world per brief: no light-mode tokens.
+  */
   :root{
-    --bg:#F1F2ED;
-    --surface:#FBFCF8;
-    --surface-2:#E9EBE3;
-    --ink:#171A16;
-    --ink-muted:#5B5F56;
-    --ink-faint:#8A8E82;
-    --border:#D7D9CF;
-    --border-strong:#B9BCB0;
-    --accent:#26314F;
-    --accent-ink:#F3F5FC;
-    --accent-soft:#DCE1EE;
-    --success:#2F7B5D;
-    --success-soft:#DEEBE3;
-    --warning:#8A6218;
-    --warning-soft:#F1E6CC;
-    --critical:#A5433A;
-    --critical-soft:#F3DFDB;
-    --mono-bg:#E7E9E1;
-    --shadow: 0 1px 2px rgba(23,26,22,0.06);
-    --font-display: "Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
-    --font-body: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --font-mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#12141A;
-      --surface:#191C22;
-      --surface-2:#20242C;
-      --ink:#ECEEE7;
-      --ink-muted:#9BA097;
-      --ink-faint:#6D716A;
-      --border:#2B2F37;
-      --border-strong:#3B4049;
-      --accent:#8DA0FF;
-      --accent-ink:#0F1526;
-      --accent-soft:#232B47;
-      --success:#5FCB9C;
-      --success-soft:#1B3129;
-      --warning:#E0AE5C;
-      --warning-soft:#332A15;
-      --critical:#E38F84;
-      --critical-soft:#332019;
-      --mono-bg:#20242C;
-      --shadow: 0 1px 2px rgba(0,0,0,0.4);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#12141A;
-    --surface:#191C22;
-    --surface-2:#20242C;
-    --ink:#ECEEE7;
-    --ink-muted:#9BA097;
-    --ink-faint:#6D716A;
-    --border:#2B2F37;
-    --border-strong:#3B4049;
-    --accent:#8DA0FF;
-    --accent-ink:#0F1526;
-    --accent-soft:#232B47;
-    --success:#5FCB9C;
-    --success-soft:#1B3129;
-    --warning:#E0AE5C;
-    --warning-soft:#332A15;
-    --critical:#E38F84;
-    --critical-soft:#332019;
-    --mono-bg:#20242C;
-    --shadow: 0 1px 2px rgba(0,0,0,0.4);
+    --bg:#14161A;
+    --bg-outer:#0B0C0E;
+    --surface:#1A1D22;
+    --surface-2:#22262C;
+    --ink:#E8E4D9;
+    --ink-muted:#9B968A;
+    --ink-faint:#65625A;
+    --border:#33363B;
+    --border-strong:#45484E;
+    --accent:#8B96C9;
+    --accent-ink:#12141A;
+    --accent-soft:#242838;
+    --success:#6FAE8C;
+    --success-soft:#1C2B24;
+    --warning:#C9A15E;
+    --warning-soft:#2E2617;
+    --critical:#C4746A;
+    --critical-soft:#301F1D;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono","Fira Code","Roboto Mono",Menlo,Consolas,"Liberation Mono",monospace;
   }
 
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--bg);
+    background:var(--bg-outer);
     color:var(--ink);
-    font-family:var(--font-body);
-    font-size:15px;
-    line-height:1.5;
+    font-family:var(--font-mono);
+    font-size:16.5px;
+    line-height:1.6;
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3{font-family:var(--font-display);font-weight:600;text-wrap:balance;margin:0;}
-  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  h1,h2,h3{font-family:var(--font-mono);font-weight:600;text-wrap:balance;margin:0;}
   button{font-family:inherit;}
   ::selection{background:var(--accent-soft);}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .tabnum{font-variant-numeric:tabular-nums;}
 
-  .app{max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
+  /* ---------- outer terminal window ---------- */
+  .terminal{
+    max-width:1300px;margin:36px auto 60px;
+    border:1px solid var(--border-strong);
+    background:var(--bg);
+    box-shadow:0 30px 70px rgba(0,0,0,0.55);
+  }
+  .titlebar{
+    display:flex;align-items:center;gap:14px;
+    padding:12px 18px;border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  .dots{display:flex;gap:7px;}
+  .dots i{width:11px;height:11px;border-radius:50%;display:block;}
+  .dots i:nth-child(1){background:#C4746A;}
+  .dots i:nth-child(2){background:#C9A15E;}
+  .dots i:nth-child(3){background:#6FAE8C;}
+  .path{font-size:12.5px;color:var(--ink-faint);letter-spacing:0.01em;}
+  .path b{color:var(--ink-muted);}
 
-  /* ---------- top bar ---------- */
+  .app{padding:40px 44px 56px;}
+  @media (max-width:720px){ .app{padding:26px 18px 40px;} .terminal{margin:16px auto 40px;} }
+
+  /* ---------- intro modal ---------- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(6,7,8,0.82);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;z-index:50;
+  }
+  .modal-backdrop.hidden{display:none;}
+  .modal{
+    max-width:640px;width:100%;background:var(--bg);
+    border:1px solid var(--border-strong);
+    box-shadow:0 40px 90px rgba(0,0,0,0.6);
+  }
+  .modal-head{
+    padding:10px 18px;border-bottom:1px solid var(--border);
+    background:var(--surface);font-size:12.5px;color:var(--ink-faint);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .modal-body{padding:30px 32px 32px;}
+  .modal-body .kicker{font-size:12px;letter-spacing:0.1em;color:var(--warning);margin-bottom:10px;}
+  .modal-body h2{font-size:23px;margin-bottom:14px;line-height:1.35;}
+  .modal-body p{font-size:14.5px;color:var(--ink-muted);margin:0 0 12px;max-width:56ch;}
+  .modal-body ul{margin:0 0 20px;padding-left:0;list-style:none;font-size:14px;color:var(--ink-muted);}
+  .modal-body li{padding:4px 0 4px 20px;position:relative;}
+  .modal-body li::before{content:"▸";position:absolute;left:0;color:var(--accent);}
+  .modal-foot{display:flex;justify-content:flex-end;padding-top:6px;}
+
+  /* ---------- bracket buttons (TUI style) ---------- */
+  .btn{
+    border:1px solid var(--border-strong);background:none;color:var(--ink);
+    padding:11px 18px;font-size:13.5px;letter-spacing:0.03em;text-transform:uppercase;
+    cursor:pointer;border-radius:0;
+  }
+  .btn::before{content:"[ ";color:var(--ink-faint);}
+  .btn::after{content:" ]";color:var(--ink-faint);}
+  .btn:hover{background:var(--surface-2);}
+  .btn.primary{border-color:var(--accent);color:var(--accent);}
+  .btn.primary::before,.btn.primary::after{color:var(--accent);}
+  .btn.primary:hover{background:var(--accent-soft);}
+  .btn.danger{border-color:var(--critical);color:var(--critical);}
+  .btn.danger::before,.btn.danger::after{color:var(--critical);}
+  .btn.danger:hover{background:var(--critical-soft);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn:disabled:hover{background:none;}
+
+  /* ---------- wordmark / header ---------- */
   .topbar{
-    display:flex;align-items:baseline;justify-content:space-between;
-    padding-bottom:18px;border-bottom:1px solid var(--border);
-    margin-bottom:26px;
-    flex-wrap:wrap;gap:10px;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:16px;flex-wrap:wrap;padding-bottom:26px;margin-bottom:34px;
+    border-bottom:1px solid var(--border);
   }
-  .wordmark{display:flex;align-items:baseline;gap:10px;}
-  .wordmark h1{font-size:26px;letter-spacing:0.2px;}
-  .wordmark span{font-size:12.5px;color:var(--ink-muted);font-family:var(--font-body);}
-  .session-pill{
-    font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;
-    color:var(--ink-faint);border:1px solid var(--border);border-radius:3px;
-    padding:4px 8px;background:var(--surface);
+  .wordmark h1{
+    font-size:42px;letter-spacing:0.02em;line-height:1;
   }
+  .wordmark .tagline{font-size:13.5px;color:var(--ink-faint);margin-top:8px;}
+  .session{font-size:12.5px;color:var(--ink-faint);text-align:right;}
+  .session b{color:var(--ink-muted);font-weight:500;}
+  .session .flow{color:var(--accent);}
 
-  /* ---------- steps rail ---------- */
-  .rail{display:flex;gap:0;margin-bottom:30px;border:1px solid var(--border);background:var(--surface);border-radius:4px;overflow:hidden;}
-  .step{
-    flex:1;display:flex;align-items:center;gap:10px;padding:13px 16px;
-    cursor:pointer;background:none;border:none;color:var(--ink);
-    border-right:1px solid var(--border);text-align:left;
-    transition:background .15s ease;
+  /* ---------- ascii flow diagram / steps rail ---------- */
+  .flow-diagram{
+    overflow-x:auto;margin-bottom:44px;
+    border:1px solid var(--border);background:var(--surface);
   }
-  .step:last-child{border-right:none;}
-  .step:hover{background:var(--surface-2);}
-  .step .n{
-    font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);
-    border:1px solid var(--border-strong);border-radius:50%;
-    width:22px;height:22px;display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
+  .flow-row{display:flex;min-width:max-content;}
+  .flow-step{
+    display:flex;flex-direction:column;gap:6px;
+    padding:18px 26px;cursor:pointer;background:none;border:none;color:var(--ink);
+    border-right:1px solid var(--border);text-align:left;min-width:200px;
   }
-  .step .label{font-size:13px;color:var(--ink-muted);}
-  .step .label b{display:block;font-size:14px;color:var(--ink);font-weight:600;}
-  .step.active{background:var(--accent-soft);}
-  .step.active .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
-  .step.active .label, .step.active .label b{color:var(--ink);}
-  .step.done .n{background:var(--success);border-color:var(--success);color:var(--accent-ink);}
+  .flow-step:last-child{border-right:none;}
+  .flow-step .idx{font-size:11.5px;color:var(--ink-faint);letter-spacing:0.08em;}
+  .flow-step .lbl{font-size:16px;letter-spacing:0.02em;}
+  .flow-step .sub{font-size:12px;color:var(--ink-faint);}
+  .flow-step:hover{background:var(--surface-2);}
+  .flow-step.active{background:var(--accent-soft);}
+  .flow-step.active .idx,.flow-step.active .lbl{color:var(--accent);}
+  .flow-step.done .idx::after{content:" ✓";color:var(--success);}
+  .flow-arrow{display:flex;align-items:center;color:var(--ink-faint);font-size:16px;padding:0 4px;}
 
   /* ---------- screens ---------- */
   .screen{display:none;}
-  .screen.active{display:block;animation:rise .28s ease both;}
+  .screen.active{display:block;animation:rise .25s ease both;}
   @media (prefers-reduced-motion: reduce){ .screen.active{animation:none;} }
-  @keyframes rise{ from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+  @keyframes rise{ from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 
-  .screen-head{margin-bottom:22px;}
-  .screen-head h2{font-size:23px;margin-bottom:6px;}
-  .screen-head p{color:var(--ink-muted);max-width:60ch;margin:0;font-size:14.5px;}
+  .rule{color:var(--ink-faint);font-size:13px;letter-spacing:0.02em;margin-bottom:18px;user-select:none;overflow-x:hidden;white-space:nowrap;}
 
-  .grid-2{display:grid;grid-template-columns:1.15fr 0.85fr;gap:18px;align-items:start;}
-  @media (max-width:860px){ .grid-2{grid-template-columns:1fr;} }
+  .screen-head{margin-bottom:30px;}
+  .screen-head .eyebrow{font-size:12px;color:var(--warning);letter-spacing:0.1em;margin-bottom:10px;}
+  .screen-head h2{font-size:29px;margin-bottom:10px;}
+  .screen-head p{color:var(--ink-muted);max-width:64ch;margin:0;font-size:15px;line-height:1.6;}
 
-  .card{
-    background:var(--surface);border:1px solid var(--border);border-radius:4px;
-    box-shadow:var(--shadow);
-  }
-  .card-pad{padding:18px 20px;}
+  .grid-2{display:grid;grid-template-columns:1.15fr 0.85fr;gap:22px;align-items:start;}
+  @media (max-width:900px){ .grid-2{grid-template-columns:1fr;} }
+
+  .card{background:var(--surface);border:1px solid var(--border);}
+  .card-pad{padding:24px 26px;}
+  .card-title{font-size:12px;letter-spacing:0.08em;color:var(--ink-faint);margin-bottom:16px;text-transform:uppercase;}
 
   /* ---------- screen 1: builder ---------- */
   .counter-bar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:12px 16px;border:1px solid var(--border);border-radius:4px;
-    background:var(--surface);margin-bottom:14px;
+    padding:16px 20px;border:1px solid var(--border);background:var(--surface);margin-bottom:18px;
+    flex-wrap:wrap;gap:8px;
   }
-  .counter-bar .count{font-family:var(--font-mono);font-size:14px;}
+  .counter-bar .count{font-size:15px;}
   .counter-bar .count b{color:var(--accent);}
   .counter-bar .hint{font-size:12.5px;color:var(--ink-faint);}
 
   .chat-group-label{
-    font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;
-    color:var(--ink-faint);padding:12px 16px 6px;
+    font-size:12px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--ink-faint);padding:16px 20px 8px;
   }
-  .chat-list{border:1px solid var(--border);border-radius:4px;background:var(--surface);overflow:hidden;}
+  .chat-list{border:1px solid var(--border);background:var(--surface);}
   .chat-row{
-    display:flex;align-items:flex-start;gap:12px;padding:12px 16px;
+    display:flex;align-items:flex-start;gap:14px;padding:16px 20px;
     border-top:1px solid var(--border);cursor:pointer;
   }
   .chat-list .chat-group-label:first-child{border-top:none;}
   .chat-row:first-of-type{border-top:none;}
   .chat-row:hover{background:var(--surface-2);}
   .chat-row.selected-view{background:var(--accent-soft);}
-  .chat-row input[type=checkbox]{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;}
-  .chat-row.excluded{opacity:0.55;}
+  .chat-row input[type=checkbox]{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;}
+  .chat-row.excluded{opacity:0.5;}
   .provider-badge{
-    font-family:var(--font-mono);font-size:10.5px;font-weight:600;
-    border-radius:3px;padding:2px 6px;flex-shrink:0;margin-top:1px;
+    font-size:11px;font-weight:600;border:1px solid var(--border-strong);
+    padding:2px 7px;flex-shrink:0;margin-top:1px;letter-spacing:0.03em;
   }
-  .provider-badge.gpt{background:var(--success-soft);color:var(--success);}
-  .provider-badge.claude{background:var(--warning-soft);color:var(--warning);}
+  .provider-badge.gpt{color:var(--success);border-color:var(--success);}
+  .provider-badge.claude{color:var(--warning);border-color:var(--warning);}
   .chat-meta{flex:1;min-width:0;}
-  .chat-title{font-size:14px;font-weight:500;}
-  .chat-sub{font-size:12px;color:var(--ink-faint);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
-  .tag{
-    font-size:11px;border-radius:3px;padding:1px 6px;white-space:nowrap;
-  }
-  .tag.redact{background:var(--warning-soft);color:var(--warning);}
-  .tag.exclude{background:var(--critical-soft);color:var(--critical);}
+  .chat-title{font-size:15px;}
+  .chat-sub{font-size:12.5px;color:var(--ink-faint);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;}
+  .tag{font-size:11.5px;padding:1px 7px;white-space:nowrap;border:1px solid;}
+  .tag.redact{color:var(--warning);border-color:var(--warning);}
+  .tag.exclude{color:var(--critical);border-color:var(--critical);}
 
-  .preview-panel h3{font-size:14px;margin-bottom:4px;}
-  .preview-empty{color:var(--ink-faint);font-size:13.5px;padding:30px 6px;text-align:center;}
-  .transcript{font-size:13.5px;line-height:1.65;}
-  .msg{margin-bottom:12px;}
-  .msg .who{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:2px;}
+  .preview-panel h3{font-size:15px;margin-bottom:6px;}
+  .preview-empty{color:var(--ink-faint);font-size:14px;padding:40px 6px;text-align:center;}
+  .transcript{font-size:14.5px;line-height:1.7;}
+  .msg{margin-bottom:14px;}
+  .msg .who{font-size:11px;color:var(--ink-faint);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;}
   .redacted{
-    background:var(--ink);color:var(--ink);border-radius:2px;
-    padding:0 4px;cursor:pointer;position:relative;user-select:none;
+    background:var(--ink);color:var(--ink);padding:0 4px;cursor:pointer;position:relative;user-select:none;
   }
   .redacted.revealed{background:var(--warning-soft);color:var(--ink);}
   .redacted::after{
-    content:"redact";position:absolute;left:0;top:-19px;
-    font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);
-    opacity:0;pointer-events:none;transition:opacity .12s ease;
+    content:"redact";position:absolute;left:0;top:-20px;
+    font-size:10px;color:var(--ink-faint);opacity:0;pointer-events:none;transition:opacity .12s ease;
   }
   .redacted:hover::after{opacity:1;}
-  .demo-note{font-size:11.5px;color:var(--ink-faint);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px;}
+  .demo-note{font-size:12px;color:var(--ink-faint);margin-top:14px;border-top:1px dashed var(--border);padding-top:10px;}
 
   /* ---------- screen 2: grant ---------- */
-  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;}
-  .field-row label{font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-faint);}
-  .field-value{
-    border:1px solid var(--border);border-radius:3px;padding:9px 11px;
-    background:var(--surface-2);font-size:14px;
-  }
-  .pill-set{display:flex;gap:8px;flex-wrap:wrap;}
+  .field-row{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;}
+  .field-row label{font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);}
+  .field-value{border:1px solid var(--border);padding:11px 13px;background:var(--surface-2);font-size:14.5px;}
+  .pill-set{display:flex;gap:10px;flex-wrap:wrap;}
   .pill-choice{
-    border:1px solid var(--border);border-radius:20px;padding:7px 14px;
-    font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink-muted);
+    border:1px solid var(--border);padding:8px 16px;font-size:13px;cursor:pointer;
+    background:none;color:var(--ink-muted);
   }
-  .pill-choice.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .pill-choice.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
 
-  .manifest-row{
-    display:flex;justify-content:space-between;gap:12px;padding:9px 0;
-    border-bottom:1px solid var(--border);font-size:13.5px;
-  }
+  .manifest-row{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px;}
   .manifest-row:last-child{border-bottom:none;}
   .manifest-row .k{color:var(--ink-muted);}
-  .manifest-row .v{font-family:var(--font-mono);font-size:13px;text-align:right;}
-  .check-list{list-style:none;margin:0;padding:0;font-size:13px;}
-  .check-list li{display:flex;gap:8px;align-items:center;padding:4px 0;color:var(--ink-muted);}
-  .check-list li .dot{color:var(--success);font-family:var(--font-mono);}
+  .manifest-row .v{font-size:13.5px;text-align:right;}
+  .check-list{list-style:none;margin:0;padding:0;font-size:13.5px;}
+  .check-list li{display:flex;gap:9px;align-items:center;padding:5px 0;color:var(--ink-muted);}
+  .check-list li .dot{color:var(--success);}
 
-  .stamp{
-    display:none;align-items:center;justify-content:center;gap:8px;
-    margin-top:14px;border:2px solid var(--success);border-radius:4px;
-    color:var(--success);font-family:var(--font-mono);font-size:12.5px;
-    letter-spacing:0.1em;text-transform:uppercase;padding:9px;
-    transform:scale(0.9);opacity:0;
+  .stamp-note{
+    display:none;align-items:center;justify-content:center;gap:10px;
+    margin-top:16px;border:1px solid var(--success);color:var(--success);
+    font-size:13px;letter-spacing:0.08em;text-transform:uppercase;padding:11px;
+    transform:scale(0.94);opacity:0;
   }
-  .stamp.show{display:flex;animation:stamp-in .35s ease forwards;}
+  .stamp-note.show{display:flex;animation:stamp-in .3s ease forwards;}
   @keyframes stamp-in{ to{transform:scale(1);opacity:1;} }
-  @media (prefers-reduced-motion: reduce){ .stamp.show{animation:none;transform:scale(1);opacity:1;} }
+  @media (prefers-reduced-motion: reduce){ .stamp-note.show{animation:none;transform:scale(1);opacity:1;} }
 
   /* ---------- screen 3: evaluate ---------- */
   .disclosure{
-    display:flex;gap:10px;align-items:flex-start;padding:12px 14px;
-    border:1px solid var(--warning);background:var(--warning-soft);
-    border-radius:4px;margin-bottom:20px;font-size:13.5px;color:var(--ink);
+    display:flex;gap:12px;align-items:flex-start;padding:16px 18px;
+    border:1px solid var(--warning);background:var(--warning-soft);margin-bottom:26px;font-size:14px;color:var(--ink);
   }
-  .disclosure b{font-family:var(--font-mono);color:var(--warning);flex-shrink:0;}
+  .disclosure b{color:var(--warning);flex-shrink:0;}
 
-  .note-section{padding:16px 0;border-top:1px solid var(--border);}
+  .note-section{padding:20px 0;border-top:1px solid var(--border);}
   .note-section:first-of-type{border-top:none;padding-top:0;}
-  .note-section h3{font-size:14.5px;margin-bottom:6px;}
-  .note-section p{margin:0 0 6px;font-size:14px;color:var(--ink);max-width:68ch;}
-  .cite{font-size:12px;color:var(--ink-faint);font-style:italic;}
+  .note-section h3{font-size:15.5px;margin-bottom:8px;}
+  .note-section p{margin:0 0 8px;font-size:14.5px;color:var(--ink);max-width:70ch;line-height:1.65;}
+  .cite{font-size:12.5px;color:var(--ink-faint);}
 
   .advisory-chip{
-    display:inline-flex;align-items:center;gap:6px;margin-top:18px;
-    font-size:12px;color:var(--ink-muted);border:1px solid var(--border);
-    border-radius:20px;padding:6px 12px;background:var(--surface-2);
+    display:inline-flex;align-items:center;gap:8px;margin-top:22px;
+    font-size:12.5px;color:var(--ink-muted);border:1px solid var(--border);padding:8px 14px;
   }
-  .advisory-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .advisory-chip .dot{width:6px;height:6px;background:var(--accent);}
 
   /* ---------- screen 4: receipts ---------- */
-  .status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
-  .status-pill{
-    font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;
-    border-radius:20px;padding:6px 14px;
-  }
-  .status-pill.active{background:var(--success-soft);color:var(--success);}
-  .status-pill.revoked{background:var(--critical-soft);color:var(--critical);}
+  .status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .status-pill{font-size:12.5px;letter-spacing:0.05em;padding:7px 16px;border:1px solid;}
+  .status-pill.active{color:var(--success);border-color:var(--success);background:var(--success-soft);}
+  .status-pill.revoked{color:var(--critical);border-color:var(--critical);background:var(--critical-soft);}
 
-  .timeline{border-left:2px solid var(--border);margin-left:6px;padding-left:20px;}
-  .tl-item{position:relative;padding-bottom:22px;}
+  .timeline{border-left:2px solid var(--border);margin-left:6px;padding-left:24px;}
+  .tl-item{position:relative;padding-bottom:26px;}
   .tl-item:last-child{padding-bottom:0;}
   .tl-item::before{
-    content:"";position:absolute;left:-27px;top:3px;width:10px;height:10px;
-    border-radius:50%;background:var(--surface);border:2px solid var(--ink-faint);
+    content:"";position:absolute;left:-31px;top:4px;width:11px;height:11px;
+    background:var(--bg);border:2px solid var(--ink-faint);
   }
   .tl-item.verified::before{border-color:var(--success);background:var(--success);}
   .tl-item.revoke::before{border-color:var(--critical);background:var(--critical);}
-  .tl-time{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);}
-  .tl-what{font-size:14px;margin-top:2px;}
-  .tl-detail{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
+  .tl-time{font-size:12px;color:var(--ink-faint);}
+  .tl-what{font-size:15px;margin-top:3px;}
+  .tl-detail{font-size:13px;color:var(--ink-muted);margin-top:3px;}
 
   .revoke-box{
-    margin-top:22px;padding-top:18px;border-top:1px solid var(--border);
-    display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+    margin-top:26px;padding-top:22px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
   }
-  .revoke-box p{margin:0;font-size:13px;color:var(--ink-muted);max-width:44ch;}
+  .revoke-box p{margin:0;font-size:13.5px;color:var(--ink-muted);max-width:46ch;}
 
-  /* ---------- buttons ---------- */
-  .btn{
-    border-radius:3px;padding:10px 18px;font-size:13.5px;font-weight:500;
-    cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);
-  }
-  .btn:hover{background:var(--surface-2);}
-  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
-  .btn.primary:hover{opacity:0.9;}
-  .btn.danger{background:var(--critical);color:var(--accent-ink);border-color:var(--critical);}
-  .btn.danger:hover{opacity:0.9;}
-  .btn:disabled{opacity:0.45;cursor:not-allowed;}
-
-  .footer-nav{display:flex;justify-content:space-between;margin-top:26px;}
+  .footer-nav{display:flex;justify-content:space-between;margin-top:34px;}
 </style>
+</head>
+<body>
 
-<div class="app">
-  <div class="topbar">
-    <div class="wordmark">
-      <h1>🛂 Vouch</h1>
-      <span>portable proof of process — preview walkthrough</span>
+<div class="modal-backdrop" id="introModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal-head">
+      <span>readme.txt</span>
+      <span>1 of 1</span>
     </div>
-    <div class="session-pill">seeded data · Maya Okonkwo → Northwind Systems</div>
+    <div class="modal-body">
+      <div class="kicker">BEFORE YOU CLICK ANYTHING —</div>
+      <h2 id="introTitle">This is a concept mock-up, not a working product.</h2>
+      <p><span id="introName"></span> is a submission for the AI Passport Ideathon (Egoist Machines). Every screen below is real, clickable UI — but every chat, name, hash, and timestamp is seeded fictional data. Nothing here reads a real AI chat history or contacts a real hiring bot.</p>
+      <ul>
+        <li>Walk through 4 steps: build a passport, grant access, see what a hiring bot reads, then revoke it.</li>
+        <li>Checkboxes, the expiry selector, and the revoke button actually respond — they just update local, made-up state.</li>
+        <li>The point being demonstrated: selective, verifiable, revocable sharing of AI-collaboration history for technical hiring.</li>
+      </ul>
+      <div class="modal-foot">
+        <button class="btn primary" id="introDismiss">continue_</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="terminal">
+  <div class="titlebar">
+    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="path"><b>guest</b>@passport-preview:<span id="pathScreen">~/build</span>$</div>
   </div>
 
-  <nav class="rail" id="rail" aria-label="Passport flow steps">
-    <button class="step" data-goto="build"><span class="n">1</span><span class="label">Build<b>Passport builder</b></span></button>
-    <button class="step" data-goto="grant"><span class="n">2</span><span class="label">Grant<b>Sign &amp; send</b></span></button>
-    <button class="step" data-goto="evaluate"><span class="n">3</span><span class="label">Evaluate<b>Hiring bot view</b></span></button>
-    <button class="step" data-goto="receipts"><span class="n">4</span><span class="label">Receipts<b>Access log</b></span></button>
-  </nav>
-
-  <!-- SCREEN 1: BUILD -->
-  <section class="screen" id="screen-build">
-    <div class="screen-head">
-      <h2>Build your passport</h2>
-      <p>Select which conversations travel with this application. Redact spans inside a chat without dropping the whole thing.</p>
-    </div>
-
-    <div class="counter-bar">
-      <div class="count"><b id="includedCount">3</b> of 47 conversations included</div>
-      <div class="hint">Everything unchecked stays on your device</div>
-    </div>
-
-    <div class="grid-2">
-      <div>
-        <div class="chat-list" id="chatList"></div>
+  <div class="app">
+    <div class="topbar">
+      <div class="wordmark">
+        <h1 id="wordmark"></h1>
+        <div class="tagline">portable proof of process — interactive concept walkthrough</div>
       </div>
-      <div class="card preview-panel">
-        <div class="card-pad" id="previewPanel">
-          <div class="preview-empty">Select a conversation on the left to preview what travels.</div>
-        </div>
+      <div class="session">
+        candidate: <b>Maya Okonkwo</b><br>
+        verifier: <b>Northwind Systems</b><br>
+        status: <span class="flow" id="sessionStatus">passport not yet sent</span>
       </div>
     </div>
 
-    <div class="footer-nav">
-      <span></span>
-      <button class="btn primary" data-goto="grant">Continue to grant →</button>
+    <div class="flow-diagram">
+      <div class="flow-row" id="rail">
+        <button class="flow-step" data-goto="build">
+          <span class="idx">STEP 01</span>
+          <span class="lbl">Build</span>
+          <span class="sub">select &amp; redact chats</span>
+        </button>
+        <div class="flow-arrow">──▶</div>
+        <button class="flow-step" data-goto="grant">
+          <span class="idx">STEP 02</span>
+          <span class="lbl">Grant</span>
+          <span class="sub">sign &amp; send</span>
+        </button>
+        <div class="flow-arrow">──▶</div>
+        <button class="flow-step" data-goto="evaluate">
+          <span class="idx">STEP 03</span>
+          <span class="lbl">Evaluate</span>
+          <span class="sub">hiring bot's read</span>
+        </button>
+        <div class="flow-arrow">──▶</div>
+        <button class="flow-step" data-goto="receipts">
+          <span class="idx">STEP 04</span>
+          <span class="lbl">Receipts</span>
+          <span class="sub">access log &amp; revoke</span>
+        </button>
+      </div>
     </div>
-  </section>
 
-  <!-- SCREEN 2: GRANT -->
-  <section class="screen" id="screen-grant">
-    <div class="screen-head">
-      <h2>Grant access</h2>
-      <p>Name the verifier, set an expiry, and see exactly what will be signed and sent.</p>
-    </div>
+    <!-- SCREEN 1: BUILD -->
+    <section class="screen" id="screen-build">
+      <div class="rule">── build ─────────────────────────────────────────────────────────────</div>
+      <div class="screen-head">
+        <div class="eyebrow">01 / BUILD</div>
+        <h2>Build your passport</h2>
+        <p>Select which conversations travel with this application. Redact spans inside a chat without dropping the whole thing.</p>
+      </div>
 
-    <div class="grid-2">
-      <div class="card card-pad">
-        <div class="field-row">
-          <label>Verifier</label>
-          <div class="field-value">Northwind Systems — Hiring, Backend Engineer II</div>
-        </div>
-        <div class="field-row">
-          <label>Purpose</label>
-          <div class="field-value">Technical hiring evaluation — reasoning &amp; process review</div>
-        </div>
-        <div class="field-row">
-          <label>Expires</label>
-          <div class="pill-set" id="expirySet">
-            <div class="pill-choice" data-days="7">7 days</div>
-            <div class="pill-choice active" data-days="14">14 days</div>
-            <div class="pill-choice" data-days="30">30 days</div>
+      <div class="counter-bar">
+        <div class="count"><b id="includedCount">3</b> of 47 conversations included</div>
+        <div class="hint">everything unchecked stays on your device</div>
+      </div>
+
+      <div class="grid-2">
+        <div><div class="chat-list" id="chatList"></div></div>
+        <div class="card preview-panel">
+          <div class="card-pad" id="previewPanel">
+            <div class="preview-empty">select a conversation on the left to preview what travels →</div>
           </div>
         </div>
-        <button class="btn primary" id="signBtn" style="width:100%;margin-top:6px;">Sign &amp; send passport</button>
-        <div class="stamp" id="stamp">✓ Passport signed &amp; sent</div>
+      </div>
+
+      <div class="footer-nav">
+        <span></span>
+        <button class="btn primary" data-goto="grant">continue to grant</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: GRANT -->
+    <section class="screen" id="screen-grant">
+      <div class="rule">── grant ─────────────────────────────────────────────────────────────</div>
+      <div class="screen-head">
+        <div class="eyebrow">02 / GRANT</div>
+        <h2>Grant access</h2>
+        <p>Name the verifier, set an expiry, and see exactly what will be signed and sent.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="field-row">
+            <label>verifier</label>
+            <div class="field-value">Northwind Systems — Hiring, Backend Engineer II</div>
+          </div>
+          <div class="field-row">
+            <label>purpose</label>
+            <div class="field-value">Technical hiring evaluation — reasoning &amp; process review</div>
+          </div>
+          <div class="field-row">
+            <label>expires</label>
+            <div class="pill-set" id="expirySet">
+              <div class="pill-choice" data-days="7">7 days</div>
+              <div class="pill-choice active" data-days="14">14 days</div>
+              <div class="pill-choice" data-days="30">30 days</div>
+            </div>
+          </div>
+          <button class="btn primary" id="signBtn" style="width:100%;margin-top:8px;">sign &amp; send passport</button>
+          <div class="stamp-note" id="stamp">✓ passport signed &amp; sent</div>
+        </div>
+
+        <div class="card card-pad">
+          <div class="card-title">manifest — what travels</div>
+          <div class="manifest-row"><div class="k">conversations</div><div class="v" id="manifestCount">3 of 47</div></div>
+          <div class="manifest-row"><div class="k">redaction spans applied</div><div class="v">2</div></div>
+          <div class="manifest-row"><div class="k">content hash</div><div class="v">sha256:9f3a1c…e02b</div></div>
+          <div class="manifest-row"><div class="k">expires</div><div class="v" id="manifestExpiry">in 14 days</div></div>
+          <div class="card-title" style="margin-top:22px;">provenance</div>
+          <ul class="check-list">
+            <li><span class="dot">✓</span> ChatGPT export signature verified</li>
+            <li><span class="dot">✓</span> Claude export signature verified</li>
+            <li><span class="dot">✓</span> no edits since original timestamp</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-nav">
+        <button class="btn" data-goto="build">back to builder</button>
+        <button class="btn primary" data-goto="evaluate">view hiring bot's read</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: EVALUATE -->
+    <section class="screen" id="screen-evaluate">
+      <div class="rule">── evaluate ──────────────────────────────────────────────────────────</div>
+      <div class="screen-head">
+        <div class="eyebrow">03 / EVALUATE</div>
+        <h2>Northwind Hiring Agent — read receipt</h2>
+        <p>What the verifier sees once the passport is accepted.</p>
+      </div>
+
+      <div class="disclosure">
+        <b>3 / 47</b>
+        <div>This is a self-selected sample, not a full record. Weight it as a lens on how the candidate works, not a complete history.</div>
       </div>
 
       <div class="card card-pad">
-        <h3 style="font-size:14px;margin-bottom:10px;">Manifest — what travels</h3>
-        <div class="manifest-row"><div class="k">Conversations</div><div class="v" id="manifestCount">3 of 47</div></div>
-        <div class="manifest-row"><div class="k">Redaction spans applied</div><div class="v">2</div></div>
-        <div class="manifest-row"><div class="k">Content hash</div><div class="v mono">sha256:9f3a1c…e02b</div></div>
-        <div class="manifest-row"><div class="k">Expires</div><div class="v" id="manifestExpiry">in 14 days</div></div>
-        <h3 style="font-size:13px;margin:16px 0 8px;">Provenance</h3>
-        <ul class="check-list">
-          <li><span class="dot">✓</span> ChatGPT export signature verified</li>
-          <li><span class="dot">✓</span> Claude export signature verified</li>
-          <li><span class="dot">✓</span> No edits since original timestamp</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="footer-nav">
-      <button class="btn" data-goto="build">← Back to builder</button>
-      <button class="btn primary" data-goto="evaluate">View hiring bot's read →</button>
-    </div>
-  </section>
-
-  <!-- SCREEN 3: EVALUATE -->
-  <section class="screen" id="screen-evaluate">
-    <div class="screen-head">
-      <h2>Northwind Hiring Agent — read receipt</h2>
-      <p>What the verifier sees once the passport is accepted.</p>
-    </div>
-
-    <div class="disclosure">
-      <b>3 / 47</b>
-      <div>This is a self-selected sample, not a full record. Weight it as a lens on how the candidate works, not a complete history.</div>
-    </div>
-
-    <div class="card card-pad">
-      <div class="note-section">
-        <h3>Debugging approach</h3>
-        <p>Isolated a race condition in a Go worker pool by first reproducing under load rather than reading code top-to-bottom — narrowed to a shared-slice write before proposing a fix, and considered two mitigations before picking a channel-based one.</p>
-        <div class="cite">— from "Debugging a race condition in a Go worker pool," Mar 14</div>
-      </div>
-      <div class="note-section">
-        <h3>Tradeoff discussion</h3>
-        <p>Weighed event sourcing against a CRUD model for an order pipeline on write complexity vs. audit needs, and explicitly recommended CRUD for the team's current size — comfortable arguing against the more "impressive" option.</p>
-        <div class="cite">— from "Event sourcing vs. CRUD for order pipeline," Jan 20</div>
-      </div>
-      <div class="note-section">
-        <h3>Systems reasoning</h3>
-        <p>Designed a rate limiter for a public API starting from failure modes (burst traffic, clock skew across nodes) before choosing token bucket over sliding window, with a stated reason for the choice.</p>
-        <div class="cite">— from "System design: rate limiter for public API," seeded chat</div>
-      </div>
-      <div class="note-section">
-        <h3>Communication clarity</h3>
-        <p>Explains reasoning in short, ordered steps rather than long unstructured prose across all three conversations; asks clarifying questions before proposing a fix rather than guessing.</p>
-        <div class="cite">— pattern observed across included conversations</div>
-      </div>
-    </div>
-
-    <div class="advisory-chip"><span class="dot"></span> Advisory input only — not an automated hiring decision</div>
-
-    <div class="footer-nav">
-      <button class="btn" data-goto="grant">← Back to grant</button>
-      <button class="btn primary" data-goto="receipts">View receipt log →</button>
-    </div>
-  </section>
-
-  <!-- SCREEN 4: RECEIPTS -->
-  <section class="screen" id="screen-receipts">
-    <div class="screen-head">
-      <h2>Receipt log</h2>
-      <p>Every grant, access, and revocation, in order. Revoke ends read access immediately, even mid-review.</p>
-    </div>
-
-    <div class="status-row">
-      <div>Passport for Northwind Systems — Hiring</div>
-      <div class="status-pill active" id="statusPill">ACTIVE — expires in 14 days</div>
-    </div>
-
-    <div class="card card-pad">
-      <div class="timeline" id="timeline">
-        <div class="tl-item verified">
-          <div class="tl-time">Mar 18, 2026 · 09:14</div>
-          <div class="tl-what">Passport signed and sent</div>
-          <div class="tl-detail">3 conversations, 2 redaction spans, sha256:9f3a1c…e02b</div>
+        <div class="note-section">
+          <h3>Debugging approach</h3>
+          <p>Isolated a race condition in a Go worker pool by first reproducing under load rather than reading code top-to-bottom — narrowed to a shared-slice write before proposing a fix, and considered two mitigations before picking a channel-based one.</p>
+          <div class="cite">— from "Debugging a race condition in a Go worker pool," Mar 14</div>
         </div>
-        <div class="tl-item verified">
-          <div class="tl-time">Mar 18, 2026 · 14:02</div>
-          <div class="tl-what">Read by Northwind Hiring Agent</div>
-          <div class="tl-detail">Full manifest read, evaluation note generated</div>
+        <div class="note-section">
+          <h3>Tradeoff discussion</h3>
+          <p>Weighed event sourcing against a CRUD model for an order pipeline on write complexity vs. audit needs, and explicitly recommended CRUD for the team's current size — comfortable arguing against the more "impressive" option.</p>
+          <div class="cite">— from "Event sourcing vs. CRUD for order pipeline," Jan 20</div>
         </div>
-        <div class="tl-item verified">
-          <div class="tl-time">Mar 19, 2026 · 08:47</div>
-          <div class="tl-what">Read by Northwind Hiring Agent</div>
-          <div class="tl-detail">Re-opened during panel review</div>
+        <div class="note-section">
+          <h3>Systems reasoning</h3>
+          <p>Designed a rate limiter for a public API starting from failure modes (burst traffic, clock skew across nodes) before choosing token bucket over sliding window, with a stated reason for the choice.</p>
+          <div class="cite">— from "System design: rate limiter for public API," seeded chat</div>
+        </div>
+        <div class="note-section">
+          <h3>Communication clarity</h3>
+          <p>Explains reasoning in short, ordered steps rather than long unstructured prose across all three conversations; asks clarifying questions before proposing a fix rather than guessing.</p>
+          <div class="cite">— pattern observed across included conversations</div>
         </div>
       </div>
 
-      <div class="revoke-box">
-        <p>Revoking ends Northwind's read access now. Already-generated notes stay with them; raw transcripts do not.</p>
-        <button class="btn danger" id="revokeBtn">Revoke access</button>
-      </div>
-    </div>
+      <div class="advisory-chip"><span class="dot"></span> advisory input only — not an automated hiring decision</div>
 
-    <div class="footer-nav">
-      <button class="btn" data-goto="evaluate">← Back to evaluation</button>
-      <button class="btn" data-goto="build">Restart walkthrough</button>
-    </div>
-  </section>
+      <div class="footer-nav">
+        <button class="btn" data-goto="grant">back to grant</button>
+        <button class="btn primary" data-goto="receipts">view receipt log</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: RECEIPTS -->
+    <section class="screen" id="screen-receipts">
+      <div class="rule">── receipts ──────────────────────────────────────────────────────────</div>
+      <div class="screen-head">
+        <div class="eyebrow">04 / RECEIPTS</div>
+        <h2>Receipt log</h2>
+        <p>Every grant, access, and revocation, in order. Revoke ends read access immediately, even mid-review.</p>
+      </div>
+
+      <div class="status-row">
+        <div>passport for Northwind Systems — Hiring</div>
+        <div class="status-pill active" id="statusPill">ACTIVE — expires in 14 days</div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="timeline" id="timeline">
+          <div class="tl-item verified">
+            <div class="tl-time">Mar 18, 2026 · 09:14</div>
+            <div class="tl-what">passport signed and sent</div>
+            <div class="tl-detail">3 conversations, 2 redaction spans, sha256:9f3a1c…e02b</div>
+          </div>
+          <div class="tl-item verified">
+            <div class="tl-time">Mar 18, 2026 · 14:02</div>
+            <div class="tl-what">read by Northwind Hiring Agent</div>
+            <div class="tl-detail">full manifest read, evaluation note generated</div>
+          </div>
+          <div class="tl-item verified">
+            <div class="tl-time">Mar 19, 2026 · 08:47</div>
+            <div class="tl-what">read by Northwind Hiring Agent</div>
+            <div class="tl-detail">re-opened during panel review</div>
+          </div>
+        </div>
+
+        <div class="revoke-box">
+          <p>Revoking ends Northwind's read access now. Already-generated notes stay with them; raw transcripts do not.</p>
+          <button class="btn danger" id="revokeBtn">revoke access</button>
+        </div>
+      </div>
+
+      <div class="footer-nav">
+        <button class="btn" data-goto="evaluate">back to evaluation</button>
+        <button class="btn" data-goto="build">restart walkthrough</button>
+      </div>
+    </section>
+  </div>
 </div>
 
 <script>
+  const PRODUCT_NAME = "STAMP"; // working title — swap this one line once a name is picked
+  document.getElementById("wordmark").textContent = PRODUCT_NAME;
+  document.getElementById("introName").textContent = PRODUCT_NAME;
+  document.title = PRODUCT_NAME + " — passport walkthrough (working name, unconfirmed)";
+
   const chats = [
     {id:1, provider:"gpt", title:"Debugging a race condition in a Go worker pool", date:"Mar 14, 2026", count:42, included:true,
       transcript:[
@@ -555,7 +619,7 @@
   function renderPreview(){
     const panel = document.getElementById("previewPanel");
     const chat = chats.find(c=>c.id===state.activeChatId);
-    if(!chat){ panel.innerHTML = `<div class="preview-empty">Select a conversation on the left to preview what travels.</div>`; return; }
+    if(!chat){ panel.innerHTML = `<div class="preview-empty">select a conversation on the left to preview what travels →</div>`; return; }
     let msgs = chat.transcript.map(m=>{
       let text = m.text;
       if(chat.redact && text.includes("for ")){
@@ -568,9 +632,9 @@
     }).join("");
     panel.innerHTML = `
       <h3>${chat.title}</h3>
-      <div class="chat-sub" style="margin-bottom:12px;">${chat.date} · ${chat.count} messages ${chat.redactions?`· ${chat.redactions} span redacted`:""}</div>
+      <div class="chat-sub" style="margin-bottom:14px;">${chat.date} · ${chat.count} messages ${chat.redactions?`· ${chat.redactions} span redacted`:""}</div>
       <div class="transcript">${msgs}</div>
-      ${chat.redact ? `<div class="demo-note">Redacted spans stay hidden in the real product. Click one here to see what it conceals — demo only.</div>` : ""}
+      ${chat.redact ? `<div class="demo-note">redacted spans stay hidden in the real product. click one here to see what it conceals — demo only.</div>` : ""}
     `;
   }
 
@@ -586,11 +650,12 @@
     order.forEach(o=>{
       document.getElementById(`screen-${o}`).classList.toggle("active", o===id);
     });
-    document.querySelectorAll(".step").forEach(s=>{
+    document.querySelectorAll(".flow-step").forEach(s=>{
       const target = s.dataset.goto;
       s.classList.toggle("active", target===id);
       s.classList.toggle("done", order.indexOf(target) < order.indexOf(id));
     });
+    document.getElementById("pathScreen").textContent = "~/" + id;
     window.scrollTo({top:0, behavior:"instant"});
   }
   document.querySelectorAll("[data-goto]").forEach(el=>{
@@ -612,7 +677,8 @@
     state.signed = true;
     document.getElementById("stamp").classList.add("show");
     document.getElementById("signBtn").disabled = true;
-    document.getElementById("signBtn").textContent = "Passport sent";
+    document.getElementById("signBtn").textContent = "passport sent";
+    document.getElementById("sessionStatus").textContent = "passport sent — active";
   });
 
   // ---- revoke ----
@@ -626,18 +692,26 @@
     tl.insertAdjacentHTML("beforeend", `
       <div class="tl-item revoke">
         <div class="tl-time">${stamp}</div>
-        <div class="tl-what">Revoked by Maya Okonkwo</div>
-        <div class="tl-detail">Read access ended immediately. Evaluation note already generated remains with Northwind; raw transcripts do not.</div>
+        <div class="tl-what">revoked by Maya Okonkwo</div>
+        <div class="tl-detail">read access ended immediately. evaluation note already generated remains with Northwind; raw transcripts do not.</div>
       </div>`);
     const pill = document.getElementById("statusPill");
     pill.textContent = "REVOKED — access ended";
     pill.classList.remove("active");
     pill.classList.add("revoked");
     document.getElementById("revokeBtn").disabled = true;
-    document.getElementById("revokeBtn").textContent = "Access revoked";
+    document.getElementById("revokeBtn").textContent = "access revoked";
+    document.getElementById("sessionStatus").textContent = "passport revoked";
+  });
+
+  // ---- intro modal ----
+  document.getElementById("introDismiss").addEventListener("click", ()=>{
+    document.getElementById("introModal").classList.add("hidden");
   });
 
   renderChatList();
   updateCounts();
   goto("build");
 </script>
+</body>
+</html>
