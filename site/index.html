@@ -1,0 +1,643 @@
+<!doctype html>
+<title>Vouch — passport walkthrough</title>
+<style>
+  :root{
+    --bg:#F1F2ED;
+    --surface:#FBFCF8;
+    --surface-2:#E9EBE3;
+    --ink:#171A16;
+    --ink-muted:#5B5F56;
+    --ink-faint:#8A8E82;
+    --border:#D7D9CF;
+    --border-strong:#B9BCB0;
+    --accent:#26314F;
+    --accent-ink:#F3F5FC;
+    --accent-soft:#DCE1EE;
+    --success:#2F7B5D;
+    --success-soft:#DEEBE3;
+    --warning:#8A6218;
+    --warning-soft:#F1E6CC;
+    --critical:#A5433A;
+    --critical-soft:#F3DFDB;
+    --mono-bg:#E7E9E1;
+    --shadow: 0 1px 2px rgba(23,26,22,0.06);
+    --font-display: "Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --font-body: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12141A;
+      --surface:#191C22;
+      --surface-2:#20242C;
+      --ink:#ECEEE7;
+      --ink-muted:#9BA097;
+      --ink-faint:#6D716A;
+      --border:#2B2F37;
+      --border-strong:#3B4049;
+      --accent:#8DA0FF;
+      --accent-ink:#0F1526;
+      --accent-soft:#232B47;
+      --success:#5FCB9C;
+      --success-soft:#1B3129;
+      --warning:#E0AE5C;
+      --warning-soft:#332A15;
+      --critical:#E38F84;
+      --critical-soft:#332019;
+      --mono-bg:#20242C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12141A;
+    --surface:#191C22;
+    --surface-2:#20242C;
+    --ink:#ECEEE7;
+    --ink-muted:#9BA097;
+    --ink-faint:#6D716A;
+    --border:#2B2F37;
+    --border-strong:#3B4049;
+    --accent:#8DA0FF;
+    --accent-ink:#0F1526;
+    --accent-soft:#232B47;
+    --success:#5FCB9C;
+    --success-soft:#1B3129;
+    --warning:#E0AE5C;
+    --warning-soft:#332A15;
+    --critical:#E38F84;
+    --critical-soft:#332019;
+    --mono-bg:#20242C;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display);font-weight:600;text-wrap:balance;margin:0;}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  button{font-family:inherit;}
+  ::selection{background:var(--accent-soft);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .app{max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding-bottom:18px;border-bottom:1px solid var(--border);
+    margin-bottom:26px;
+    flex-wrap:wrap;gap:10px;
+  }
+  .wordmark{display:flex;align-items:baseline;gap:10px;}
+  .wordmark h1{font-size:26px;letter-spacing:0.2px;}
+  .wordmark span{font-size:12.5px;color:var(--ink-muted);font-family:var(--font-body);}
+  .session-pill{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;
+    color:var(--ink-faint);border:1px solid var(--border);border-radius:3px;
+    padding:4px 8px;background:var(--surface);
+  }
+
+  /* ---------- steps rail ---------- */
+  .rail{display:flex;gap:0;margin-bottom:30px;border:1px solid var(--border);background:var(--surface);border-radius:4px;overflow:hidden;}
+  .step{
+    flex:1;display:flex;align-items:center;gap:10px;padding:13px 16px;
+    cursor:pointer;background:none;border:none;color:var(--ink);
+    border-right:1px solid var(--border);text-align:left;
+    transition:background .15s ease;
+  }
+  .step:last-child{border-right:none;}
+  .step:hover{background:var(--surface-2);}
+  .step .n{
+    font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);
+    border:1px solid var(--border-strong);border-radius:50%;
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .step .label{font-size:13px;color:var(--ink-muted);}
+  .step .label b{display:block;font-size:14px;color:var(--ink);font-weight:600;}
+  .step.active{background:var(--accent-soft);}
+  .step.active .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .step.active .label, .step.active .label b{color:var(--ink);}
+  .step.done .n{background:var(--success);border-color:var(--success);color:var(--accent-ink);}
+
+  /* ---------- screens ---------- */
+  .screen{display:none;}
+  .screen.active{display:block;animation:rise .28s ease both;}
+  @media (prefers-reduced-motion: reduce){ .screen.active{animation:none;} }
+  @keyframes rise{ from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+
+  .screen-head{margin-bottom:22px;}
+  .screen-head h2{font-size:23px;margin-bottom:6px;}
+  .screen-head p{color:var(--ink-muted);max-width:60ch;margin:0;font-size:14.5px;}
+
+  .grid-2{display:grid;grid-template-columns:1.15fr 0.85fr;gap:18px;align-items:start;}
+  @media (max-width:860px){ .grid-2{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:4px;
+    box-shadow:var(--shadow);
+  }
+  .card-pad{padding:18px 20px;}
+
+  /* ---------- screen 1: builder ---------- */
+  .counter-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;border:1px solid var(--border);border-radius:4px;
+    background:var(--surface);margin-bottom:14px;
+  }
+  .counter-bar .count{font-family:var(--font-mono);font-size:14px;}
+  .counter-bar .count b{color:var(--accent);}
+  .counter-bar .hint{font-size:12.5px;color:var(--ink-faint);}
+
+  .chat-group-label{
+    font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-faint);padding:12px 16px 6px;
+  }
+  .chat-list{border:1px solid var(--border);border-radius:4px;background:var(--surface);overflow:hidden;}
+  .chat-row{
+    display:flex;align-items:flex-start;gap:12px;padding:12px 16px;
+    border-top:1px solid var(--border);cursor:pointer;
+  }
+  .chat-list .chat-group-label:first-child{border-top:none;}
+  .chat-row:first-of-type{border-top:none;}
+  .chat-row:hover{background:var(--surface-2);}
+  .chat-row.selected-view{background:var(--accent-soft);}
+  .chat-row input[type=checkbox]{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;}
+  .chat-row.excluded{opacity:0.55;}
+  .provider-badge{
+    font-family:var(--font-mono);font-size:10.5px;font-weight:600;
+    border-radius:3px;padding:2px 6px;flex-shrink:0;margin-top:1px;
+  }
+  .provider-badge.gpt{background:var(--success-soft);color:var(--success);}
+  .provider-badge.claude{background:var(--warning-soft);color:var(--warning);}
+  .chat-meta{flex:1;min-width:0;}
+  .chat-title{font-size:14px;font-weight:500;}
+  .chat-sub{font-size:12px;color:var(--ink-faint);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+  .tag{
+    font-size:11px;border-radius:3px;padding:1px 6px;white-space:nowrap;
+  }
+  .tag.redact{background:var(--warning-soft);color:var(--warning);}
+  .tag.exclude{background:var(--critical-soft);color:var(--critical);}
+
+  .preview-panel h3{font-size:14px;margin-bottom:4px;}
+  .preview-empty{color:var(--ink-faint);font-size:13.5px;padding:30px 6px;text-align:center;}
+  .transcript{font-size:13.5px;line-height:1.65;}
+  .msg{margin-bottom:12px;}
+  .msg .who{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:2px;}
+  .redacted{
+    background:var(--ink);color:var(--ink);border-radius:2px;
+    padding:0 4px;cursor:pointer;position:relative;user-select:none;
+  }
+  .redacted.revealed{background:var(--warning-soft);color:var(--ink);}
+  .redacted::after{
+    content:"redact";position:absolute;left:0;top:-19px;
+    font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);
+    opacity:0;pointer-events:none;transition:opacity .12s ease;
+  }
+  .redacted:hover::after{opacity:1;}
+  .demo-note{font-size:11.5px;color:var(--ink-faint);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px;}
+
+  /* ---------- screen 2: grant ---------- */
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;}
+  .field-row label{font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-faint);}
+  .field-value{
+    border:1px solid var(--border);border-radius:3px;padding:9px 11px;
+    background:var(--surface-2);font-size:14px;
+  }
+  .pill-set{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill-choice{
+    border:1px solid var(--border);border-radius:20px;padding:7px 14px;
+    font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink-muted);
+  }
+  .pill-choice.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+
+  .manifest-row{
+    display:flex;justify-content:space-between;gap:12px;padding:9px 0;
+    border-bottom:1px solid var(--border);font-size:13.5px;
+  }
+  .manifest-row:last-child{border-bottom:none;}
+  .manifest-row .k{color:var(--ink-muted);}
+  .manifest-row .v{font-family:var(--font-mono);font-size:13px;text-align:right;}
+  .check-list{list-style:none;margin:0;padding:0;font-size:13px;}
+  .check-list li{display:flex;gap:8px;align-items:center;padding:4px 0;color:var(--ink-muted);}
+  .check-list li .dot{color:var(--success);font-family:var(--font-mono);}
+
+  .stamp{
+    display:none;align-items:center;justify-content:center;gap:8px;
+    margin-top:14px;border:2px solid var(--success);border-radius:4px;
+    color:var(--success);font-family:var(--font-mono);font-size:12.5px;
+    letter-spacing:0.1em;text-transform:uppercase;padding:9px;
+    transform:scale(0.9);opacity:0;
+  }
+  .stamp.show{display:flex;animation:stamp-in .35s ease forwards;}
+  @keyframes stamp-in{ to{transform:scale(1);opacity:1;} }
+  @media (prefers-reduced-motion: reduce){ .stamp.show{animation:none;transform:scale(1);opacity:1;} }
+
+  /* ---------- screen 3: evaluate ---------- */
+  .disclosure{
+    display:flex;gap:10px;align-items:flex-start;padding:12px 14px;
+    border:1px solid var(--warning);background:var(--warning-soft);
+    border-radius:4px;margin-bottom:20px;font-size:13.5px;color:var(--ink);
+  }
+  .disclosure b{font-family:var(--font-mono);color:var(--warning);flex-shrink:0;}
+
+  .note-section{padding:16px 0;border-top:1px solid var(--border);}
+  .note-section:first-of-type{border-top:none;padding-top:0;}
+  .note-section h3{font-size:14.5px;margin-bottom:6px;}
+  .note-section p{margin:0 0 6px;font-size:14px;color:var(--ink);max-width:68ch;}
+  .cite{font-size:12px;color:var(--ink-faint);font-style:italic;}
+
+  .advisory-chip{
+    display:inline-flex;align-items:center;gap:6px;margin-top:18px;
+    font-size:12px;color:var(--ink-muted);border:1px solid var(--border);
+    border-radius:20px;padding:6px 12px;background:var(--surface-2);
+  }
+  .advisory-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+
+  /* ---------- screen 4: receipts ---------- */
+  .status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .status-pill{
+    font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;
+    border-radius:20px;padding:6px 14px;
+  }
+  .status-pill.active{background:var(--success-soft);color:var(--success);}
+  .status-pill.revoked{background:var(--critical-soft);color:var(--critical);}
+
+  .timeline{border-left:2px solid var(--border);margin-left:6px;padding-left:20px;}
+  .tl-item{position:relative;padding-bottom:22px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:"";position:absolute;left:-27px;top:3px;width:10px;height:10px;
+    border-radius:50%;background:var(--surface);border:2px solid var(--ink-faint);
+  }
+  .tl-item.verified::before{border-color:var(--success);background:var(--success);}
+  .tl-item.revoke::before{border-color:var(--critical);background:var(--critical);}
+  .tl-time{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);}
+  .tl-what{font-size:14px;margin-top:2px;}
+  .tl-detail{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
+
+  .revoke-box{
+    margin-top:22px;padding-top:18px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .revoke-box p{margin:0;font-size:13px;color:var(--ink-muted);max-width:44ch;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    border-radius:3px;padding:10px 18px;font-size:13.5px;font-weight:500;
+    cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);
+  }
+  .btn:hover{background:var(--surface-2);}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .btn.primary:hover{opacity:0.9;}
+  .btn.danger{background:var(--critical);color:var(--accent-ink);border-color:var(--critical);}
+  .btn.danger:hover{opacity:0.9;}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+  .footer-nav{display:flex;justify-content:space-between;margin-top:26px;}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="wordmark">
+      <h1>🛂 Vouch</h1>
+      <span>portable proof of process — preview walkthrough</span>
+    </div>
+    <div class="session-pill">seeded data · Maya Okonkwo → Northwind Systems</div>
+  </div>
+
+  <nav class="rail" id="rail" aria-label="Passport flow steps">
+    <button class="step" data-goto="build"><span class="n">1</span><span class="label">Build<b>Passport builder</b></span></button>
+    <button class="step" data-goto="grant"><span class="n">2</span><span class="label">Grant<b>Sign &amp; send</b></span></button>
+    <button class="step" data-goto="evaluate"><span class="n">3</span><span class="label">Evaluate<b>Hiring bot view</b></span></button>
+    <button class="step" data-goto="receipts"><span class="n">4</span><span class="label">Receipts<b>Access log</b></span></button>
+  </nav>
+
+  <!-- SCREEN 1: BUILD -->
+  <section class="screen" id="screen-build">
+    <div class="screen-head">
+      <h2>Build your passport</h2>
+      <p>Select which conversations travel with this application. Redact spans inside a chat without dropping the whole thing.</p>
+    </div>
+
+    <div class="counter-bar">
+      <div class="count"><b id="includedCount">3</b> of 47 conversations included</div>
+      <div class="hint">Everything unchecked stays on your device</div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="chat-list" id="chatList"></div>
+      </div>
+      <div class="card preview-panel">
+        <div class="card-pad" id="previewPanel">
+          <div class="preview-empty">Select a conversation on the left to preview what travels.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <span></span>
+      <button class="btn primary" data-goto="grant">Continue to grant →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: GRANT -->
+  <section class="screen" id="screen-grant">
+    <div class="screen-head">
+      <h2>Grant access</h2>
+      <p>Name the verifier, set an expiry, and see exactly what will be signed and sent.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card card-pad">
+        <div class="field-row">
+          <label>Verifier</label>
+          <div class="field-value">Northwind Systems — Hiring, Backend Engineer II</div>
+        </div>
+        <div class="field-row">
+          <label>Purpose</label>
+          <div class="field-value">Technical hiring evaluation — reasoning &amp; process review</div>
+        </div>
+        <div class="field-row">
+          <label>Expires</label>
+          <div class="pill-set" id="expirySet">
+            <div class="pill-choice" data-days="7">7 days</div>
+            <div class="pill-choice active" data-days="14">14 days</div>
+            <div class="pill-choice" data-days="30">30 days</div>
+          </div>
+        </div>
+        <button class="btn primary" id="signBtn" style="width:100%;margin-top:6px;">Sign &amp; send passport</button>
+        <div class="stamp" id="stamp">✓ Passport signed &amp; sent</div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="font-size:14px;margin-bottom:10px;">Manifest — what travels</h3>
+        <div class="manifest-row"><div class="k">Conversations</div><div class="v" id="manifestCount">3 of 47</div></div>
+        <div class="manifest-row"><div class="k">Redaction spans applied</div><div class="v">2</div></div>
+        <div class="manifest-row"><div class="k">Content hash</div><div class="v mono">sha256:9f3a1c…e02b</div></div>
+        <div class="manifest-row"><div class="k">Expires</div><div class="v" id="manifestExpiry">in 14 days</div></div>
+        <h3 style="font-size:13px;margin:16px 0 8px;">Provenance</h3>
+        <ul class="check-list">
+          <li><span class="dot">✓</span> ChatGPT export signature verified</li>
+          <li><span class="dot">✓</span> Claude export signature verified</li>
+          <li><span class="dot">✓</span> No edits since original timestamp</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <button class="btn" data-goto="build">← Back to builder</button>
+      <button class="btn primary" data-goto="evaluate">View hiring bot's read →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: EVALUATE -->
+  <section class="screen" id="screen-evaluate">
+    <div class="screen-head">
+      <h2>Northwind Hiring Agent — read receipt</h2>
+      <p>What the verifier sees once the passport is accepted.</p>
+    </div>
+
+    <div class="disclosure">
+      <b>3 / 47</b>
+      <div>This is a self-selected sample, not a full record. Weight it as a lens on how the candidate works, not a complete history.</div>
+    </div>
+
+    <div class="card card-pad">
+      <div class="note-section">
+        <h3>Debugging approach</h3>
+        <p>Isolated a race condition in a Go worker pool by first reproducing under load rather than reading code top-to-bottom — narrowed to a shared-slice write before proposing a fix, and considered two mitigations before picking a channel-based one.</p>
+        <div class="cite">— from "Debugging a race condition in a Go worker pool," Mar 14</div>
+      </div>
+      <div class="note-section">
+        <h3>Tradeoff discussion</h3>
+        <p>Weighed event sourcing against a CRUD model for an order pipeline on write complexity vs. audit needs, and explicitly recommended CRUD for the team's current size — comfortable arguing against the more "impressive" option.</p>
+        <div class="cite">— from "Event sourcing vs. CRUD for order pipeline," Jan 20</div>
+      </div>
+      <div class="note-section">
+        <h3>Systems reasoning</h3>
+        <p>Designed a rate limiter for a public API starting from failure modes (burst traffic, clock skew across nodes) before choosing token bucket over sliding window, with a stated reason for the choice.</p>
+        <div class="cite">— from "System design: rate limiter for public API," seeded chat</div>
+      </div>
+      <div class="note-section">
+        <h3>Communication clarity</h3>
+        <p>Explains reasoning in short, ordered steps rather than long unstructured prose across all three conversations; asks clarifying questions before proposing a fix rather than guessing.</p>
+        <div class="cite">— pattern observed across included conversations</div>
+      </div>
+    </div>
+
+    <div class="advisory-chip"><span class="dot"></span> Advisory input only — not an automated hiring decision</div>
+
+    <div class="footer-nav">
+      <button class="btn" data-goto="grant">← Back to grant</button>
+      <button class="btn primary" data-goto="receipts">View receipt log →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: RECEIPTS -->
+  <section class="screen" id="screen-receipts">
+    <div class="screen-head">
+      <h2>Receipt log</h2>
+      <p>Every grant, access, and revocation, in order. Revoke ends read access immediately, even mid-review.</p>
+    </div>
+
+    <div class="status-row">
+      <div>Passport for Northwind Systems — Hiring</div>
+      <div class="status-pill active" id="statusPill">ACTIVE — expires in 14 days</div>
+    </div>
+
+    <div class="card card-pad">
+      <div class="timeline" id="timeline">
+        <div class="tl-item verified">
+          <div class="tl-time">Mar 18, 2026 · 09:14</div>
+          <div class="tl-what">Passport signed and sent</div>
+          <div class="tl-detail">3 conversations, 2 redaction spans, sha256:9f3a1c…e02b</div>
+        </div>
+        <div class="tl-item verified">
+          <div class="tl-time">Mar 18, 2026 · 14:02</div>
+          <div class="tl-what">Read by Northwind Hiring Agent</div>
+          <div class="tl-detail">Full manifest read, evaluation note generated</div>
+        </div>
+        <div class="tl-item verified">
+          <div class="tl-time">Mar 19, 2026 · 08:47</div>
+          <div class="tl-what">Read by Northwind Hiring Agent</div>
+          <div class="tl-detail">Re-opened during panel review</div>
+        </div>
+      </div>
+
+      <div class="revoke-box">
+        <p>Revoking ends Northwind's read access now. Already-generated notes stay with them; raw transcripts do not.</p>
+        <button class="btn danger" id="revokeBtn">Revoke access</button>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <button class="btn" data-goto="evaluate">← Back to evaluation</button>
+      <button class="btn" data-goto="build">Restart walkthrough</button>
+    </div>
+  </section>
+</div>
+
+<script>
+  const chats = [
+    {id:1, provider:"gpt", title:"Debugging a race condition in a Go worker pool", date:"Mar 14, 2026", count:42, included:true,
+      transcript:[
+        {who:"Maya", text:"Getting inconsistent results from a worker pool under load, only in prod. Where would you start?"},
+        {who:"Assistant", text:"Before reading code, reproduce it deterministically under load first — race conditions hide in timing, not logic. Can you run with the race detector on?"},
+        {who:"Maya", text:"Ran it, flagged a shared slice write in the dispatcher at " },
+      ], redactions:1},
+    {id:2, provider:"gpt", title:"Refactoring auth middleware for multi-tenant SaaS", date:"Feb 2, 2026", count:28, included:false, redact:true,
+      transcript:[
+        {who:"Maya", text:"Multi-tenant auth middleware for "},
+        {who:"Assistant", text:"Before changing the middleware, what's the tenant resolution order today — header, subdomain, or JWT claim?"},
+      ], redactions:1},
+    {id:3, provider:"claude", title:"Event sourcing vs. CRUD for order pipeline", date:"Jan 20, 2026", count:51, included:true,
+      transcript:[
+        {who:"Maya", text:"Team's split on event sourcing vs. plain CRUD for the new order pipeline. Team of 4, need audit trail eventually but not now."},
+        {who:"Assistant", text:"Given the team size and 'not now,' CRUD with an append-only audit table gets you most of the auditability without the operational cost of an event store."},
+      ], redactions:0},
+    {id:4, provider:"claude", title:"Weekend trip planning to Lisbon", date:"Jan 6, 2026", count:19, included:false, excluded:true,
+      transcript:[{who:"Maya", text:"Personal — not relevant to this passport."}], redactions:0},
+    {id:5, provider:"gpt", title:"Fixing flaky Cypress tests in CI", date:"Dec 11, 2025", count:33, included:false, excluded:true,
+      transcript:[{who:"Maya", text:"Contains a former employer's internal test fixtures — excluded from this passport."}], redactions:0},
+    {id:6, provider:"claude", title:"System design: rate limiter for public API", date:"Nov 28, 2025", count:37, included:true,
+      transcript:[
+        {who:"Maya", text:"Designing a rate limiter for a public API — worried about burst traffic and clock skew across nodes."},
+        {who:"Assistant", text:"Token bucket handles bursts better than sliding window here, and it's more forgiving of clock skew since it only needs a local refill rate, not synced windows."},
+      ], redactions:0},
+  ];
+
+  const state = { activeChatId: null, expiryDays: 14, signed: false, revoked: false };
+
+  function renderChatList(){
+    const groups = {gpt:"ChatGPT", claude:"Claude"};
+    let html = "";
+    for(const key of ["gpt","claude"]){
+      html += `<div class="chat-group-label">${groups[key]}</div>`;
+      chats.filter(c=>c.provider===key).forEach(c=>{
+        const excludedClass = c.excluded ? "excluded" : "";
+        const selectedClass = state.activeChatId===c.id ? "selected-view" : "";
+        let tag = "";
+        if(c.redact) tag = `<span class="tag redact">1 span redacted</span>`;
+        if(c.excluded) tag = `<span class="tag exclude">excluded — sensitive</span>`;
+        html += `
+          <div class="chat-row ${excludedClass} ${selectedClass}" data-id="${c.id}">
+            <input type="checkbox" ${c.included?"checked":""} data-check="${c.id}" ${c.excluded?"disabled":""} onclick="event.stopPropagation()">
+            <span class="provider-badge ${c.provider}">${c.provider==="gpt"?"GPT":"CL"}</span>
+            <div class="chat-meta">
+              <div class="chat-title">${c.title}</div>
+              <div class="chat-sub"><span>${c.date}</span><span>${c.count} messages</span>${tag}</div>
+            </div>
+          </div>`;
+      });
+    }
+    document.getElementById("chatList").innerHTML = html;
+    document.querySelectorAll(".chat-row").forEach(row=>{
+      row.addEventListener("click", ()=>{ state.activeChatId = Number(row.dataset.id); renderChatList(); renderPreview(); });
+    });
+    document.querySelectorAll("[data-check]").forEach(cb=>{
+      cb.addEventListener("change", (e)=>{
+        const chat = chats.find(c=>c.id===Number(cb.dataset.check));
+        chat.included = e.target.checked;
+        updateCounts();
+      });
+    });
+  }
+
+  function renderPreview(){
+    const panel = document.getElementById("previewPanel");
+    const chat = chats.find(c=>c.id===state.activeChatId);
+    if(!chat){ panel.innerHTML = `<div class="preview-empty">Select a conversation on the left to preview what travels.</div>`; return; }
+    let msgs = chat.transcript.map(m=>{
+      let text = m.text;
+      if(chat.redact && text.includes("for ")){
+        text = text.replace("for ", `for <span class="redacted" title="redacted: company name" onclick="this.classList.toggle('revealed'); this.textContent=this.classList.contains('revealed')?'Meridian Health Group':'██████████';event.stopPropagation();">██████████</span>`);
+      }
+      if(chat.id===1 && text.includes("dispatcher at")){
+        text = text + `<span class="redacted" title="redacted: internal hostname" onclick="this.classList.toggle('revealed'); this.textContent=this.classList.contains('revealed')?'orders-worker-03.internal':'██████████';event.stopPropagation();">██████████</span>`;
+      }
+      return `<div class="msg"><div class="who">${m.who}</div><div>${text}</div></div>`;
+    }).join("");
+    panel.innerHTML = `
+      <h3>${chat.title}</h3>
+      <div class="chat-sub" style="margin-bottom:12px;">${chat.date} · ${chat.count} messages ${chat.redactions?`· ${chat.redactions} span redacted`:""}</div>
+      <div class="transcript">${msgs}</div>
+      ${chat.redact ? `<div class="demo-note">Redacted spans stay hidden in the real product. Click one here to see what it conceals — demo only.</div>` : ""}
+    `;
+  }
+
+  function updateCounts(){
+    const n = chats.filter(c=>c.included).length;
+    document.getElementById("includedCount").textContent = n;
+    document.getElementById("manifestCount").textContent = `${n} of 47`;
+  }
+
+  // ---- navigation ----
+  const order = ["build","grant","evaluate","receipts"];
+  function goto(id){
+    order.forEach(o=>{
+      document.getElementById(`screen-${o}`).classList.toggle("active", o===id);
+    });
+    document.querySelectorAll(".step").forEach(s=>{
+      const target = s.dataset.goto;
+      s.classList.toggle("active", target===id);
+      s.classList.toggle("done", order.indexOf(target) < order.indexOf(id));
+    });
+    window.scrollTo({top:0, behavior:"instant"});
+  }
+  document.querySelectorAll("[data-goto]").forEach(el=>{
+    el.addEventListener("click", ()=> goto(el.dataset.goto));
+  });
+
+  // ---- expiry pills ----
+  document.querySelectorAll("#expirySet .pill-choice").forEach(p=>{
+    p.addEventListener("click", ()=>{
+      document.querySelectorAll("#expirySet .pill-choice").forEach(x=>x.classList.remove("active"));
+      p.classList.add("active");
+      state.expiryDays = Number(p.dataset.days);
+      document.getElementById("manifestExpiry").textContent = `in ${state.expiryDays} days`;
+    });
+  });
+
+  // ---- sign & send ----
+  document.getElementById("signBtn").addEventListener("click", ()=>{
+    state.signed = true;
+    document.getElementById("stamp").classList.add("show");
+    document.getElementById("signBtn").disabled = true;
+    document.getElementById("signBtn").textContent = "Passport sent";
+  });
+
+  // ---- revoke ----
+  document.getElementById("revokeBtn").addEventListener("click", ()=>{
+    if(state.revoked) return;
+    state.revoked = true;
+    const tl = document.getElementById("timeline");
+    const now = new Date();
+    const stamp = now.toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " · " +
+      now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+    tl.insertAdjacentHTML("beforeend", `
+      <div class="tl-item revoke">
+        <div class="tl-time">${stamp}</div>
+        <div class="tl-what">Revoked by Maya Okonkwo</div>
+        <div class="tl-detail">Read access ended immediately. Evaluation note already generated remains with Northwind; raw transcripts do not.</div>
+      </div>`);
+    const pill = document.getElementById("statusPill");
+    pill.textContent = "REVOKED — access ended";
+    pill.classList.remove("active");
+    pill.classList.add("revoked");
+    document.getElementById("revokeBtn").disabled = true;
+    document.getElementById("revokeBtn").textContent = "Access revoked";
+  });
+
+  renderChatList();
+  updateCounts();
+  goto("build");
+</script>
