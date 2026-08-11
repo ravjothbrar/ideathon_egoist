@@ -80,23 +80,21 @@
   }
   .modal-backdrop.hidden{display:none;}
   .modal{
-    max-width:640px;width:100%;background:var(--bg);
+    max-width:960px;width:100%;background:var(--bg);
     border:1px solid var(--border-strong);
     box-shadow:0 40px 90px rgba(0,0,0,0.6);
   }
   .modal-head{
-    padding:10px 18px;border-bottom:1px solid var(--border);
-    background:var(--surface);font-size:12.5px;color:var(--ink-faint);
+    padding:12px 22px;border-bottom:1px solid var(--border);
+    background:var(--surface);font-size:13px;color:var(--ink-faint);
     display:flex;justify-content:space-between;align-items:center;
   }
-  .modal-body{padding:30px 32px 32px;}
-  .modal-body .kicker{font-size:12px;letter-spacing:0.1em;color:var(--warning);margin-bottom:10px;}
-  .modal-body h2{font-size:23px;margin-bottom:14px;line-height:1.35;}
-  .modal-body p{font-size:14.5px;color:var(--ink-muted);margin:0 0 12px;max-width:56ch;}
-  .modal-body ul{margin:0 0 20px;padding-left:0;list-style:none;font-size:14px;color:var(--ink-muted);}
-  .modal-body li{padding:4px 0 4px 20px;position:relative;}
-  .modal-body li::before{content:"▸";position:absolute;left:0;color:var(--accent);}
+  .modal-body{padding:52px 56px 48px;}
+  .modal-body .kicker{font-size:13.5px;letter-spacing:0.12em;color:var(--warning);margin-bottom:16px;}
+  .modal-body h2{font-size:38px;margin-bottom:20px;line-height:1.3;}
+  .modal-body p{font-size:18px;color:var(--ink-muted);margin:0 0 28px;max-width:64ch;line-height:1.6;}
   .modal-foot{display:flex;justify-content:flex-end;padding-top:6px;}
+  .modal-foot .btn{font-size:15px;padding:14px 24px;}
 
   /* ---------- bracket buttons (TUI style) ---------- */
   .btn{
@@ -244,6 +242,17 @@
   .check-list li{display:flex;gap:9px;align-items:center;padding:5px 0;color:var(--ink-muted);}
   .check-list li .dot{color:var(--success);}
 
+  .redaction-example{
+    font-size:13.5px;line-height:1.65;color:var(--ink-muted);
+    border:1px solid var(--border);background:var(--surface-2);
+    padding:12px 14px;margin-bottom:6px;
+  }
+  .portable-note{
+    margin-top:16px;font-size:13px;color:var(--ink-muted);
+    border-left:2px solid var(--accent);padding:2px 0 2px 12px;
+  }
+  .portable-note b{color:var(--accent);}
+
   .stamp-note{
     display:none;align-items:center;justify-content:center;gap:10px;
     margin-top:16px;border:1px solid var(--success);color:var(--success);
@@ -310,14 +319,9 @@
       <span>1 of 1</span>
     </div>
     <div class="modal-body">
-      <div class="kicker">BEFORE YOU CLICK ANYTHING —</div>
-      <h2 id="introTitle">This is a concept mock-up, not a working product.</h2>
-      <p><span id="introName"></span> is a submission for the AI Passport Ideathon (Egoist Machines). Every screen below is real, clickable UI — but every chat, name, hash, and timestamp is seeded fictional data. Nothing here reads a real AI chat history or contacts a real hiring bot.</p>
-      <ul>
-        <li>Walk through 4 steps: build a passport, grant access, see what a hiring bot reads, then revoke it.</li>
-        <li>Checkboxes, the expiry selector, and the revoke button actually respond — they just update local, made-up state.</li>
-        <li>The point being demonstrated: selective, verifiable, revocable sharing of AI-collaboration history for technical hiring.</li>
-      </ul>
+      <div class="kicker">WHAT THIS IS —</div>
+      <h2 id="introTitle">Share your AI chats. Prove how you code. Get hired.</h2>
+      <p><span id="introName"></span> lets a software engineer hand a company's hiring bot a few real ChatGPT/Claude conversations — proof of how they debug and reason with AI — instead of a resume line no one can check. The demo below is fully clickable, but every chat and name in it is fictional.</p>
       <div class="modal-foot">
         <button class="btn primary" id="introDismiss">continue_</button>
       </div>
@@ -438,12 +442,18 @@
           <div class="manifest-row"><div class="k">redaction spans applied</div><div class="v">2</div></div>
           <div class="manifest-row"><div class="k">content hash</div><div class="v">sha256:9f3a1c…e02b</div></div>
           <div class="manifest-row"><div class="k">expires</div><div class="v" id="manifestExpiry">in 14 days</div></div>
+
+          <div class="card-title" style="margin-top:22px;">redaction, in place</div>
+          <div class="redaction-example">…flagged a shared slice write in the dispatcher at <span class="redacted" title="redacted: internal hostname" onclick="this.classList.toggle('revealed'); this.textContent=this.classList.contains('revealed')?'orders-worker-03.internal':'██████████';">██████████</span>.</div>
+          <div class="cite">1 of 2 spans in this manifest — internal hostname removed, the reasoning stays readable. click to preview.</div>
+
           <div class="card-title" style="margin-top:22px;">provenance</div>
           <ul class="check-list">
             <li><span class="dot">✓</span> ChatGPT export signature verified</li>
             <li><span class="dot">✓</span> Claude export signature verified</li>
             <li><span class="dot">✓</span> no edits since original timestamp</li>
           </ul>
+          <div class="portable-note"><b>portable:</b> works with whichever AI tools the candidate actually uses — not locked to one platform.</div>
         </div>
       </div>
 
@@ -515,17 +525,17 @@
       <div class="card card-pad">
         <div class="timeline" id="timeline">
           <div class="tl-item verified">
-            <div class="tl-time">Mar 18, 2026 · 09:14</div>
+            <div class="tl-time" data-ago-ms="259200000">3 days ago</div>
             <div class="tl-what">passport signed and sent</div>
             <div class="tl-detail">3 conversations, 2 redaction spans, sha256:9f3a1c…e02b</div>
           </div>
           <div class="tl-item verified">
-            <div class="tl-time">Mar 18, 2026 · 14:02</div>
+            <div class="tl-time" data-ago-ms="241200000">2 days ago</div>
             <div class="tl-what">read by Northwind Hiring Agent</div>
             <div class="tl-detail">full manifest read, evaluation note generated</div>
           </div>
           <div class="tl-item verified">
-            <div class="tl-time">Mar 19, 2026 · 08:47</div>
+            <div class="tl-time" data-ago-ms="126000000">1 day ago</div>
             <div class="tl-what">read by Northwind Hiring Agent</div>
             <div class="tl-detail">re-opened during panel review</div>
           </div>
@@ -686,12 +696,9 @@
     if(state.revoked) return;
     state.revoked = true;
     const tl = document.getElementById("timeline");
-    const now = new Date();
-    const stamp = now.toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " · " +
-      now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
     tl.insertAdjacentHTML("beforeend", `
       <div class="tl-item revoke">
-        <div class="tl-time">${stamp}</div>
+        <div class="tl-time">just now</div>
         <div class="tl-what">revoked by Maya Okonkwo</div>
         <div class="tl-detail">read access ended immediately. evaluation note already generated remains with Northwind; raw transcripts do not.</div>
       </div>`);
@@ -702,6 +709,17 @@
     document.getElementById("revokeBtn").disabled = true;
     document.getElementById("revokeBtn").textContent = "access revoked";
     document.getElementById("sessionStatus").textContent = "passport revoked";
+  });
+
+  // ---- relative timestamps (avoid dates that drift out of sync with real time) ----
+  function formatAgo(ms){
+    const hrs = Math.round(ms / 3600000);
+    if(hrs < 24) return `${hrs} hour${hrs===1?"":"s"} ago`;
+    const days = Math.round(hrs / 24);
+    return `${days} day${days===1?"":"s"} ago`;
+  }
+  document.querySelectorAll("[data-ago-ms]").forEach(el=>{
+    el.textContent = formatAgo(Number(el.dataset.agoMs));
   });
 
   // ---- intro modal ----
