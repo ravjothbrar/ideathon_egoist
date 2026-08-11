@@ -282,6 +282,11 @@
   }
   .advisory-chip .dot{width:6px;height:6px;background:var(--accent);}
 
+  .bot-loading{padding:70px 10px 80px;text-align:center;}
+  .loading-line{font-size:14px;color:var(--ink-muted);margin-bottom:16px;letter-spacing:0.02em;}
+  .loading-bar{height:2px;width:240px;margin:0 auto;background:var(--border);overflow:hidden;}
+  .loading-fill{height:100%;width:0%;background:var(--accent);transition:width .35s ease;}
+
   /* ---------- screen 4: receipts ---------- */
   .status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
   .status-pill{font-size:12.5px;letter-spacing:0.05em;padding:7px 16px;border:1px solid;}
@@ -472,35 +477,42 @@
         <p>What the verifier sees once the passport is accepted.</p>
       </div>
 
-      <div class="disclosure">
-        <b>3 / 47</b>
-        <div>This is a self-selected sample, not a full record. Weight it as a lens on how the candidate works, not a complete history.</div>
+      <div class="bot-loading" id="evaluateLoading">
+        <div class="loading-line" id="loadingLine">reading manifest…</div>
+        <div class="loading-bar"><div class="loading-fill" id="loadingFill"></div></div>
       </div>
 
-      <div class="card card-pad">
-        <div class="note-section">
-          <h3>Debugging approach</h3>
-          <p>Isolated a race condition in a Go worker pool by first reproducing under load rather than reading code top-to-bottom — narrowed to a shared-slice write before proposing a fix, and considered two mitigations before picking a channel-based one.</p>
-          <div class="cite">— from "Debugging a race condition in a Go worker pool," Mar 14</div>
+      <div id="evaluateReady" style="display:none;">
+        <div class="disclosure">
+          <b>3 / 47</b>
+          <div>This is a self-selected sample, not a full record. Weight it as a lens on how the candidate works, not a complete history.</div>
         </div>
-        <div class="note-section">
-          <h3>Tradeoff discussion</h3>
-          <p>Weighed event sourcing against a CRUD model for an order pipeline on write complexity vs. audit needs, and explicitly recommended CRUD for the team's current size — comfortable arguing against the more "impressive" option.</p>
-          <div class="cite">— from "Event sourcing vs. CRUD for order pipeline," Jan 20</div>
-        </div>
-        <div class="note-section">
-          <h3>Systems reasoning</h3>
-          <p>Designed a rate limiter for a public API starting from failure modes (burst traffic, clock skew across nodes) before choosing token bucket over sliding window, with a stated reason for the choice.</p>
-          <div class="cite">— from "System design: rate limiter for public API," seeded chat</div>
-        </div>
-        <div class="note-section">
-          <h3>Communication clarity</h3>
-          <p>Explains reasoning in short, ordered steps rather than long unstructured prose across all three conversations; asks clarifying questions before proposing a fix rather than guessing.</p>
-          <div class="cite">— pattern observed across included conversations</div>
-        </div>
-      </div>
 
-      <div class="advisory-chip"><span class="dot"></span> advisory input only — not an automated hiring decision</div>
+        <div class="card card-pad">
+          <div class="note-section">
+            <h3>Debugging approach</h3>
+            <p>Isolated a race condition in a Go worker pool by first reproducing under load rather than reading code top-to-bottom — narrowed to a shared-slice write before proposing a fix, and considered two mitigations before picking a channel-based one.</p>
+            <div class="cite">— from "Debugging a race condition in a Go worker pool," Mar 14</div>
+          </div>
+          <div class="note-section">
+            <h3>Tradeoff discussion</h3>
+            <p>Weighed event sourcing against a CRUD model for an order pipeline on write complexity vs. audit needs, and explicitly recommended CRUD for the team's current size — comfortable arguing against the more "impressive" option.</p>
+            <div class="cite">— from "Event sourcing vs. CRUD for order pipeline," Jan 20</div>
+          </div>
+          <div class="note-section">
+            <h3>Systems reasoning</h3>
+            <p>Designed a rate limiter for a public API starting from failure modes (burst traffic, clock skew across nodes) before choosing token bucket over sliding window, with a stated reason for the choice.</p>
+            <div class="cite">— from "System design: rate limiter for public API," seeded chat</div>
+          </div>
+          <div class="note-section">
+            <h3>Communication clarity</h3>
+            <p>Explains reasoning in short, ordered steps rather than long unstructured prose across all three conversations; asks clarifying questions before proposing a fix rather than guessing.</p>
+            <div class="cite">— pattern observed across included conversations</div>
+          </div>
+        </div>
+
+        <div class="advisory-chip"><span class="dot"></span> advisory input only — not an automated hiring decision</div>
+      </div>
 
       <div class="footer-nav">
         <button class="btn" data-goto="grant">back to grant</button>
@@ -656,6 +668,7 @@
 
   // ---- navigation ----
   const order = ["build","grant","evaluate","receipts"];
+  let evaluateLoaded = false;
   function goto(id){
     order.forEach(o=>{
       document.getElementById(`screen-${o}`).classList.toggle("active", o===id);
@@ -667,6 +680,41 @@
     });
     document.getElementById("pathScreen").textContent = "~/" + id;
     window.scrollTo({top:0, behavior:"instant"});
+    if(id === "evaluate") runEvaluateLoading();
+    if(id === "build") evaluateLoaded = false; // restart walkthrough re-runs the read
+  }
+
+  // ---- hiring bot "read" delay, so evaluation feels like it's happening live ----
+  function runEvaluateLoading(){
+    const loading = document.getElementById("evaluateLoading");
+    const ready = document.getElementById("evaluateReady");
+    const line = document.getElementById("loadingLine");
+    const fill = document.getElementById("loadingFill");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if(evaluateLoaded || reduceMotion){
+      loading.style.display = "none";
+      ready.style.display = "block";
+      return;
+    }
+
+    loading.style.display = "block";
+    ready.style.display = "none";
+    fill.style.width = "0%";
+
+    const steps = [
+      {msg:"reading manifest…", pct:30, at:0},
+      {msg:"verifying export signatures…", pct:65, at:450},
+      {msg:"generating evaluation note…", pct:100, at:850},
+    ];
+    steps.forEach(s=>{
+      setTimeout(()=>{ line.textContent = s.msg; fill.style.width = s.pct + "%"; }, s.at);
+    });
+    setTimeout(()=>{
+      loading.style.display = "none";
+      ready.style.display = "block";
+      evaluateLoaded = true;
+    }, 1250);
   }
   document.querySelectorAll("[data-goto]").forEach(el=>{
     el.addEventListener("click", ()=> goto(el.dataset.goto));
