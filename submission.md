@@ -53,13 +53,20 @@ Vouch is an application built on the AI Passport primitive, scoped specifically 
 
 ## 6. How we built it
 
-This entry is submitted in the Concept lane, so "built" means the design artifacts, not running code:
+We split the work into two passes: get the argument right before touching any UI, then build something that makes the argument concrete rather than just describe it.
 
-- **Passport data model**: a claim schema (chats included, redaction spans, manifest hash, sample-size metadata, grant scope, expiry, revocation status).
-- **Consent/grant flow**: wireframed as the four screens described in the mockup section, following the passport's existing grant → access → revoke lifecycle rather than inventing a new one.
-- **Redaction design**: span-level redaction inside a chat (not just chat-level on/off), because job-relevant reasoning and sensitive content are frequently interleaved in the same conversation.
-- **Integrity approach**: a signed-manifest scheme (hash + timestamp + provider) that a verifier can check without needing to trust the candidate's export tooling.
-- **Policy note**: a short document laying out what the hiring bot is and isn't allowed to do with the passport (evaluate reasoning process; not make an automated hire decision; not retain content past expiry).
+**Pass one — the concept.** We read the ideathon brief closely and mapped the idea directly onto its own language: the Work track names "hiring asks for too much private evidence" as a target problem, so we scoped an application of the existing AI Passport primitive (grant → access → revoke) to one specific moment — a candidate proving how they think, not just what they claim. That became the claim schema behind this note: chats included, redaction spans, manifest hash, sample-size metadata, grant scope, expiry, revocation status.
+
+**Pass two — the walkthrough.** Rather than stop at wireframes, we built a live, fully clickable prototype — a single self-contained HTML/CSS/JS file, no framework and no backend, hosted on GitHub Pages so it's a real URL rather than a screen recording:
+
+- **Vanilla-JS state machine** driving four screens (build → grant → evaluate → receipts), with checkbox selection, an expiry selector, click-to-reveal redaction spans, and a revoke button that live-appends to the receipt log — all backed by one small state object and re-render functions.
+- **Span-level redaction, shown not just claimed.** Early drafts only counted redactions ("2 spans applied"); we moved one example inline and clickable so a reviewer sees the mechanic happen instead of reading a number.
+- **A believable "read" delay.** Landing on the evaluation screen runs a brief status sequence — reading manifest → verifying export signatures → generating note — before revealing the hiring bot's output, so it reads as happening in real time instead of an instant screen swap (skipped for repeat visits and `prefers-reduced-motion`).
+- **Dates that can't go stale.** The receipt log uses relative timestamps computed at load time ("3 days ago") instead of hardcoded dates, so it never drifts out of sync with the real calendar.
+
+**Design pass.** The first version looked like a generic SaaS mockup — rounded cards, soft palette. We rebuilt it into a single dark terminal world against a specific reference set of ASCII/monospace-driven dev-tool sites: monospace type throughout, a titlebar with traffic-light dots, an ASCII flow diagram for the four steps, and bracket-style `[ TEXT ]` buttons instead of filled rounded ones — no `rounded-lg`, no gradient hero. An intro modal states plainly, before any interaction, that this is a seeded-data concept demo.
+
+**Shipping it.** Deployed via a GitHub Actions workflow (`configure-pages` → `upload-pages-artifact` → `deploy-pages`) straight from the repo, so every fix ships to the same live link within about a minute of pushing.
 
 ---
 
